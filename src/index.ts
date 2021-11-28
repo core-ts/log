@@ -1,3 +1,6 @@
+export interface NumberMap {
+  [key: string]: number;
+}
 export interface SimpleMap {
   [key: string]: string|number|boolean|Date;
 }
@@ -34,33 +37,21 @@ export interface Logger {
   isPanicEnabled(): boolean;
   isFatalEnabled(): boolean;
 }
+export const map: NumberMap = {
+  TRACE: -2,
+  DEBUG: -1,
+  INFO: 0,
+  WARN: 1,
+  ERROR: 2,
+  PANIC: 3,
+  FATAL: 4
+};
 export function createLevel(level?: string) {
   if (!level) {
     return 0;
   }
-  level = level.toUpperCase();
-  if (level === 'ERROR') {
-    return 2;
-  }
-  if (level === 'INFO') {
-    return 0;
-  }
-  if (level === 'WARN') {
-    return 1;
-  }
-  if (level === 'DEBUG') {
-    return -1;
-  }
-  if (level === 'PANIC') {
-    return 3;
-  }
-  if (level === 'FATAL') {
-    return 4;
-  }
-  if (level === 'TRACE') {
-    return -2;
-  }
-  return 0;
+  const lv = map[level.toUpperCase()];
+  return (lv !== undefined ? lv : 0);
 }
 export function createMap(c?: LogMapConfig): LogMap {
   if (!c) {
@@ -119,63 +110,63 @@ export class JSONLogger implements Logger {
   getTime: () => string;
   log: (msg: string) => void;
   trace(msg: string, m?: SimpleMap): void {
-    if (msg && msg.length > 0 && this.level >= -2) {
+    if (msg && msg.length > 0 && this.level <= -2) {
       log('trace', this.getTime, this.map, this.log, msg, m);
     }
   }
   debug(msg: string, m?: SimpleMap): void {
-    if (msg && msg.length > 0 && this.level >= -1) {
+    if (msg && msg.length > 0 && this.level <= -1) {
       log('debug', this.getTime, this.map, this.log, msg, m);
     }
   }
   info(msg: string, m?: SimpleMap): void {
-    if (msg && msg.length > 0 && this.level >= -1) {
+    if (msg && msg.length > 0 && this.level <= 0) {
       log('info', this.getTime, this.map, this.log, msg, m);
     }
   }
   warn(msg: string, m?: SimpleMap): void {
-    if (msg && msg.length > 0 && this.level >= -1) {
+    if (msg && msg.length > 0 && this.level <= 1) {
       log('warn', this.getTime, this.map, this.log, msg, m);
     }
   }
   error(msg: string, m?: SimpleMap): void {
-    if (msg && msg.length > 0 && this.level >= -1) {
+    if (msg && msg.length > 0 && this.level <= 2) {
       log('error', this.getTime, this.map, this.log, msg, m);
     }
   }
   panic(msg: string, m?: SimpleMap): void {
-    if (msg && msg.length > 0 && this.level >= -1) {
+    if (msg && msg.length > 0 && this.level <= 3) {
       log('panic', this.getTime, this.map, this.log, msg, m);
     }
   }
   fatal(msg: string, m?: SimpleMap): void {
-    if (msg && msg.length > 0 && this.level >= -1) {
+    if (msg && msg.length > 0 && this.level <= 4) {
       log('fatal', this.getTime, this.map, this.log, msg, m);
     }
   }
   isLevelEnabled(level: number): boolean {
-    return (this.level >= level);
+    return (this.level <= level);
   }
   isTraceEnabled(): boolean {
-    return (this.level >= -2);
+    return (this.level <= -2);
   }
   isDebugEnabled(): boolean {
-    return (this.level >= -1);
+    return (this.level <= -1);
   }
   isInfoEnabled(): boolean {
-    return (this.level >= 0);
+    return (this.level <= 0);
   }
   isWarnEnabled(): boolean {
-    return (this.level >= 1);
+    return (this.level <= 1);
   }
   isErrorEnabled(): boolean {
-    return (this.level >= 2);
+    return (this.level <= 2);
   }
   isPanicEnabled(): boolean {
-    return (this.level >= 3);
+    return (this.level <= 3);
   }
   isFatalEnabled(): boolean {
-    return (this.level >= 4);
+    return (this.level <= 4);
   }
 }
 export const SimpleLogger = JSONLogger;
