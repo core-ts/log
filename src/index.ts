@@ -11,6 +11,10 @@ export interface LogMapConfig {
   level?: string;
   msg?: string;
 }
+export interface LogConfig {
+  level?: string;
+  map?: LogMapConfig;
+}
 export interface Logger {
   level: number;
   map: LogMap;
