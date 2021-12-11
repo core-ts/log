@@ -17,13 +17,44 @@ export interface LogMapConfig {
 export interface Config {
   level?: string;
   map?: LogMapConfig;
+  constants?: SimpleMap;
+  name?: Name;
 }
 export interface LogConfig {
   log: Config;
 }
+export interface Name {
+  trace: string;
+  debug: string;
+  info: string;
+  warn: string;
+  error: string;
+  panic: string;
+  fatal: string;
+}
+export const name: Name = {
+  trace: 'trace',
+  debug: 'debug',
+  info: 'info',
+  warn: 'warn',
+  error: 'error',
+  panic: 'panic',
+  fatal: 'fatal'
+};
+export const NAME: Name = {
+  trace: 'TRACE',
+  debug: 'DEBUG',
+  info: 'INFO',
+  warn: 'WARN',
+  error: 'ERROR',
+  panic: 'PANIC',
+  fatal: 'FATAL'
+};
 export interface Logger {
+  name: Name;
   level: number;
   map: LogMap;
+  constants?: SimpleMap;
   trace(msg: string, m?: SimpleMap, ctx?: any): void;
   debug(msg: string, m?: SimpleMap, ctx?: any): void;
   info(msg: string, m?: SimpleMap, ctx?: any): void;
@@ -65,13 +96,19 @@ export function createMap(c?: LogMapConfig): LogMap {
   const level = (c.level && c.level.length > 0 ? c.level : 'level');
   return {msg, time, level};
 }
-export function log(level: string, getDate: () => string, conf: LogMap, lg: (msg: string) => void, msg: string, m?: SimpleMap): void {
+export function log(level: string, getDate: () => string, conf: LogMap, lg: (msg: string) => void, msg: string, c?: SimpleMap, m?: SimpleMap): void {
   setTimeout(() => {
     const obj: SimpleMap = {
       [conf.level]: level,
-      [conf.time]: getDate(),
-      [conf.msg]: msg,
+      [conf.time]: getDate()
     };
+    if (c) {
+      const keys = Object.keys(c);
+      for (const k of keys) {
+        obj[k] = c[k];
+      }
+    }
+    obj[conf.msg] = msg;
     if (m) {
       const keys = Object.keys(m);
       for (const k of keys) {
@@ -85,10 +122,15 @@ export function getTime(): string {
   const d = new Date();
   return d.toISOString();
 }
-export class JSONLogger implements Logger {
-  constructor(level?: string, conf?: LogMapConfig, getDate?: () => string, lg?: (msg: string) => void) {
+export function createLogger(c: Config, getDate?: () => string, n?: Name, lg?: (msg: string) => void): L {
+  return new L(c.level, c.map, c.constants, getDate, n, lg);
+}
+export class L implements Logger {
+  constructor(level?: string, conf?: LogMapConfig, c?: SimpleMap, getDate?: () => string, n?: Name, lg?: (msg: string) => void) {
+    this.name = (n ? n : name);
     this.level = createLevel(level);
     this.map = createMap(conf);
+    this.constants = c;
     this.log = (lg ? lg : console.log);
     this.getTime = (getDate ? getDate : getTime);
     this.trace = this.trace.bind(this);
@@ -108,43 +150,45 @@ export class JSONLogger implements Logger {
     this.isPanicEnabled = this.isPanicEnabled.bind(this);
     this.isFatalEnabled = this.isFatalEnabled.bind(this);
   }
+  name: Name;
   level: number;
   map: LogMap;
+  constants?: SimpleMap;
   getTime: () => string;
   log: (msg: string) => void;
   trace(msg: string, m?: SimpleMap): void {
     if (msg && msg.length > 0 && this.level <= -2) {
-      log('trace', this.getTime, this.map, this.log, msg, m);
+      log(this.name.trace, this.getTime, this.map, this.log, msg, this.constants, m);
     }
   }
   debug(msg: string, m?: SimpleMap): void {
     if (msg && msg.length > 0 && this.level <= -1) {
-      log('debug', this.getTime, this.map, this.log, msg, m);
+      log(this.name.debug, this.getTime, this.map, this.log, msg, this.constants, m);
     }
   }
   info(msg: string, m?: SimpleMap): void {
     if (msg && msg.length > 0 && this.level <= 0) {
-      log('info', this.getTime, this.map, this.log, msg, m);
+      log(this.name.info, this.getTime, this.map, this.log, msg, this.constants, m);
     }
   }
   warn(msg: string, m?: SimpleMap): void {
     if (msg && msg.length > 0 && this.level <= 1) {
-      log('warn', this.getTime, this.map, this.log, msg, m);
+      log(this.name.warn, this.getTime, this.map, this.log, msg, this.constants, m);
     }
   }
   error(msg: string, m?: SimpleMap): void {
     if (msg && msg.length > 0 && this.level <= 2) {
-      log('error', this.getTime, this.map, this.log, msg, m);
+      log(this.name.error, this.getTime, this.map, this.log, msg, this.constants, m);
     }
   }
   panic(msg: string, m?: SimpleMap): void {
     if (msg && msg.length > 0 && this.level <= 3) {
-      log('panic', this.getTime, this.map, this.log, msg, m);
+      log(this.name.panic, this.getTime, this.map, this.log, msg, this.constants, m);
     }
   }
   fatal(msg: string, m?: SimpleMap): void {
     if (msg && msg.length > 0 && this.level <= 4) {
-      log('fatal', this.getTime, this.map, this.log, msg, m);
+      log(this.name.fatal, this.getTime, this.map, this.log, msg, this.constants, m);
     }
   }
   isLevelEnabled(level: number): boolean {
@@ -172,4 +216,5 @@ export class JSONLogger implements Logger {
     return (this.level <= 4);
   }
 }
-export const SimpleLogger = JSONLogger;
+export const JSONLogger = L;
+export const SimpleLogger = L;
