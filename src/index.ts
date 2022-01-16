@@ -1,3 +1,5 @@
+import * as http from 'http';
+
 export interface NumberMap {
   [key: string]: number;
 }
@@ -20,6 +22,7 @@ export interface Config {
   constants?: SimpleMap;
   name?: Name;
 }
+export type LogConf = Config;
 export interface LogConfig {
   log: Config;
 }
@@ -219,3 +222,102 @@ export class L implements Logger {
 }
 export const JSONLogger = L;
 export const SimpleLogger = L;
+
+export class LogController {
+  map: NumberMap;
+  constructor(public logger: Logger, mp?: NumberMap) {
+    this.map = (mp ? mp : map);
+    this.config = this.config.bind(this);
+  }
+  config(req: http.IncomingMessage, res: http.ServerResponse) {
+    getBody(req).then(body => {
+      const obj: Config = JSON.parse(body);
+      if (!obj || obj === '') {
+        res.writeHead(400).end('The request body cannot be empty');
+      }
+      if (!this.logger) {
+        res.writeHead(503).end('Logger is not available');
+      }
+      if (typeof obj.level === 'string' && obj.level.length > 0) {
+        if (!this.map) {
+          res.writeHead(503).end('Map is not available');
+        }
+      }
+      const changed = update(this.logger, obj, this.map);
+      if (changed) {
+        res.writeHead(200).end('true');
+      } else {
+        res.writeHead(204).end('false');
+      }
+    });
+  }
+}
+export const LogHandler = LogController;
+export function getBody(req: http.IncomingMessage): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    try {
+      let body = '';
+      // listen to data sent by client
+      req.on('data', (chunk: { toString: () => string; }) => {
+        // append the string version to the body
+        body += chunk.toString();
+      });
+      // listen till the end
+      req.on('end', () => {
+        // send back the data
+        resolve(body);
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+export function update(logger: Logger, obj: Config, mp: NumberMap): boolean {
+  let changed = false;
+  if (typeof obj.level === 'string' && obj.level.length > 0) {
+    const lv = mp[obj.level.toUpperCase()];
+    if (lv !== undefined) {
+      logger.level = lv;
+      changed = true;
+    }
+  }
+  if (obj.map) {
+    if (typeof obj.map.level === 'string' && obj.map.level.length > 0) {
+      logger.map.level = obj.map.level;
+      changed = true;
+    }
+    if (typeof obj.map.time === 'string' && obj.map.time.length > 0) {
+      logger.map.time = obj.map.time;
+      changed = true;
+    }
+    if (typeof obj.map.msg === 'string' && obj.map.msg.length > 0) {
+      logger.map.msg = obj.map.msg;
+      changed = true;
+    }
+  }
+  if (obj.constants !== undefined && typeof obj.constants === 'object') {
+    const ks = Object.keys(obj.constants);
+    if (ks.length > 0) {
+      logger.constants = obj.constants;
+    } else {
+      logger.constants = undefined;
+    }
+    changed = true;
+  }
+  if (obj.name) {
+    if (typeof obj.name.trace === 'string'
+      && typeof obj.name.debug === 'string'
+      && typeof obj.name.info === 'string'
+      && typeof obj.name.warn === 'string'
+      && typeof obj.name.error === 'string'
+      && typeof obj.name.panic === 'string'
+      && typeof obj.name.fatal === 'string') {
+      logger.name = obj.name;
+      changed = true;
+    }
+  }
+  return changed;
+}
+export const updateLog = update;
+export const change = update;
+export const changeLog = update;

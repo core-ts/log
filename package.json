@@ -1,6 +1,6 @@
 {
   "name": "logger-core",
-  "version": "0.1.6",
+  "version": "0.3.0",
   "description": "logger core",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
@@ -9,6 +9,7 @@
     "clean:lib": "rimraf lib"
   },
   "devDependencies": {
+    "@types/node": "^17.0.8",
     "tslint": "5.10.0",
     "typescript": "^3.3.3333"
   },
