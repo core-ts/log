@@ -223,6 +223,7 @@ export class L implements Logger {
 export const JSONLogger = L;
 export const SimpleLogger = L;
 
+// tslint:disable-next-line:max-classes-per-file
 export class LogController {
   map: NumberMap;
   constructor(public logger: Logger, mp?: NumberMap) {
