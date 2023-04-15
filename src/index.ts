@@ -233,7 +233,7 @@ export class LogController {
   config(req: http.IncomingMessage, res: http.ServerResponse) {
     getBody(req).then(body => {
       const obj: Config = JSON.parse(body);
-      if (!obj || obj === '') {
+      if (!obj || (obj as any) === '') {
         res.writeHead(400).end('The request body cannot be empty');
       }
       if (!this.logger) {
